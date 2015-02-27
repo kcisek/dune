@@ -194,8 +194,8 @@ namespace Vision
         object_y = frame_height/2;
         x_mouse = frame_width/2;
         y_mouse = frame_height/2;
-        m_args.window_search_size = 100;
-        m_args.tpl_size = 40;
+        m_args.window_search_size = 110;
+        m_args.tpl_size = 60;
       }
 
       //! Release resources.
@@ -232,12 +232,12 @@ namespace Vision
       void 
       InicValues(void)
       {
-        tpl_width = 60;
-        tpl_height = 60;
-        window_search_width = 110;
-        window_search_height = 110;
-        m_args.window_search_size = 100;
-        m_args.tpl_size = 40;
+        tpl_width = 100;
+        tpl_height = 100;
+        window_search_width = 210;
+        window_search_height = 210;
+        m_args.window_search_size = 210;
+        m_args.tpl_size = 100;
         threshold = 0.3;
         cnt = 0;
         flag_track = 0;
@@ -316,8 +316,8 @@ namespace Vision
         min = local -> tm_min;
         sec = local -> tm_sec;
         day = local -> tm_mday;
-        mon = local -> tm_mon+1;
-        year = local -> tm_year+1900;
+        mon = local -> tm_mon + 1;
+        year = local -> tm_year + 1900;
       }
       /* mouse handler */
       void 
@@ -432,7 +432,7 @@ namespace Vision
         //Initialize Values
         InicValues();
        
-        //capture = cvCaptureFromCam(0);//for webcam
+        //capture = cvCaptureFromCAM(0);//for laptop cam
         //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg"); //for axis cam
         //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //for stream video
         capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
@@ -440,7 +440,7 @@ namespace Vision
         {
           inf("\n\tERROR OPEN CAM\n");
           capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0");
-          //capture = cvCaptureFromCam(0);//for laptop cam
+          //capture = cvCaptureFromCAM(0);//for laptop cam
           //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv");
           //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg");
           cnt++;
@@ -482,21 +482,25 @@ namespace Vision
             
           //Add information in frame result
           time_acquisition();
-          sprintf(text,"X = %d",object_x + tpl_width/2);
-          cvPutText(back, text, cvPoint(10, 20), &font, cvScalar(255, 255, 255, 0));
-          sprintf(text,"Y = %d",object_y + tpl_height/2);
-          cvPutText(back, text, cvPoint(10, 40), &font, cvScalar(255, 255, 255, 0));
+          sprintf(text,"%d",object_x + tpl_width/2);
+          cvPutText(back, text, cvPoint(object_x, 13), &font, cvScalar(0, 100, 255, 0));
+          sprintf(text,"%d",object_y + tpl_height/2);
+          cvPutText(back, text, cvPoint(frame_width-46, object_y + 12), &font, cvScalar(0, 100, 255, 0));
           sprintf(text,"%d",frame_width/2);
           cvPutText(back, text, cvPoint(frame_width/2 + 2, 13), &font, cvScalar(255, 255, 255, 0));
           sprintf(text,"%d",frame_height/2);
           cvPutText(back, text, cvPoint(frame_width - 34, frame_height/2 -2), &font, cvScalar(255, 255, 255, 0));
           sprintf(text,"Hour: %d:%d:%d",hour,min,sec);
-          cvPutText(back, text, cvPoint(10, 60), &font, cvScalar(255, 255, 100, 0));
-          sprintf(text,"Data: %d-%d-%d",day,mon,year);
-          cvPutText(back, text, cvPoint(10, 80), &font, cvScalar(255, 255, 100, 0));
+          cvPutText(back, text, cvPoint(10, 20), &font, cvScalar(50, 50, 50, 0));
+          sprintf(text,"Data: %d/%d/%d",day,mon,year);
+          cvPutText(back, text, cvPoint(10, 42), &font, cvScalar(50, 50, 50, 0));
           text[0]='\0';
           
           //Draw axis in frame result; 0 -> vertical, 1 -> horizontal
+          DashedLine(back, cvPoint(object_x + tpl_width/2, 0), cvPoint(object_x + tpl_width/2, frame_height), cvScalar(0, 100, 255, 
+0), 20, 0);
+          DashedLine(back, cvPoint(0, object_y + tpl_height/2), cvPoint(frame_width, object_y + tpl_height/2), cvScalar(0, 100, 255, 
+0), 20, 1);
           DashedLine(back, cvPoint(frame_width/2, 0), cvPoint(frame_width/2, frame_height), cvScalar(255, 255, 255, 0), 20, 0);
           DashedLine(back, cvPoint(0, frame_height/2), cvPoint(frame_width, frame_height/2), cvScalar(255, 255, 255, 0), 20, 1);
             
@@ -504,12 +508,16 @@ namespace Vision
           if ( flag_start )
           {
             save_video( back, 1);
-            cvCircle(back, cvPoint( frame_width - 20, 20 ), 4, cvScalar( 0, 255, 0, 0 ), 5, 8, 0);
+            cvCircle(back, cvPoint( frame_width - 20, 20 ), 4, cvScalar( 0, 0, 255, 0 ), 5, 8, 0);
+            sprintf(text,"REC");
+            cvPutText(back, text, cvPoint(frame_width - 60, 25), &font, cvScalar( 0, 0, 255, 0 ));
+            text[0]='\0';
+            
           }
           else
           {
             save_video( back, 0);
-            cvCircle(back, cvPoint( frame_width - 20, 20 ), 4, cvScalar( 0, 0, 255, 0 ), 5, 8, 0);
+            cvCircle(back, cvPoint( frame_width - 20, 20 ), 4, cvScalar( 0, 255, 0, 0 ), 5, 8, 0);
           }
           
           //Showm Image - Result
