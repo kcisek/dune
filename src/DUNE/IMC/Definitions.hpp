@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: 4ab0411c6256574a5ac1785347d0a9f2                            *
+// IMC XML MD5: f6f5adb5d6ef31881d40b0811697f34f                            *
 //***************************************************************************
 
 #ifndef DUNE_IMC_DEFINITIONS_HPP_INCLUDED_
@@ -12169,6 +12169,10 @@ namespace DUNE
         FLAG_Z = 0x04,
         //! Use Radius Reference.
         FLAG_RADIUS = 0x08,
+        //! Use this Reference as Start Position for PathControler.
+        FLAG_START_POINT = 0x10,
+        //! Use Current Position as Start Position for PathControler.
+        FLAG_DIRECT = 0x20,
         //! Flag Maneuver Completion.
         FLAG_MANDONE = 0x80
       };
