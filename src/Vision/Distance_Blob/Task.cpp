@@ -657,13 +657,15 @@ IPL_DEPTH_32F, 1);
         CvCapture *capture;
         //capture = cvCaptureFromCAM( 0 ); //webcam
         //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg"); //Axis Cam
-        capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //Stream Video
+        //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //Stream Video
+        capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
         while ( capture == 0 && cnt < 4)
         {
           inf("\n\tERROR OPEN CAM\n");
           //capture = cvCaptureFromCAM( 0 );
-          capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv");
+          //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv");
           //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg");
+          capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
           cnt++;
           waitForMessages(1.0);
         }
