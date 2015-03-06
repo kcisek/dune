@@ -371,7 +371,7 @@ namespace Vision
           flag_track = 1;
         else if ( (win_x + window_search_width) >= frame_width)
           flag_track = 2;
-        else if ( (win_y + (window_search_height/2)) - (window_search_height/2) <= 1 )
+        else if ( (win_y + (window_search_height/2)) - (window_search_height/2) <= 1)
           flag_track = 3;
         else if ( (win_y + window_search_height) >= frame_height)
           flag_track = 4;
@@ -382,6 +382,8 @@ namespace Vision
         /* search object in search window */
         if (flag_track == 0)
         {
+          cvReleaseImage( &tm );
+          tm = cvCreateImage( cvSize( window_search_width - tpl_width  + 1, window_search_height - tpl_height + 1), IPL_DEPTH_32F, 1);
           cvSetImageROI( frame, cvRect( win_x, win_y, window_search_width, window_search_height ) );
           cvMatchTemplate( frame, tpl, tm, CV_TM_CCOEFF_NORMED );
           cvErode(tm, tm, 0, 1);
@@ -418,10 +420,21 @@ namespace Vision
         }
         else
         {
-          /* if not found... */
-          inf("\nObject Lost.\nDefine new template - ERRO:%d\n", flag_track);
-          is_tracking = 0;
-          flag_track = 0;
+          cvReleaseImage( &tm );
+          tm = cvCreateImage( cvSize( frame_width - tpl_width + 1, frame_height - tpl_height + 1 ), IPL_DEPTH_32F, 1);
+          cvMatchTemplate( frame, tpl, tm, CV_TM_CCOEFF_NORMED );
+          cvErode(tm, tm, 0, 1);
+          cvMinMaxLoc( tm, &minval, &maxval, &minloc, &maxloc, 0 );
+          if (maxval >= threshold)
+          {
+            /* save object's current location */
+            object_x = maxloc.x;
+            object_y = maxloc.y;
+            /* setup position of search window */
+            win_x = object_x - ( (window_search_width  - tpl_width) / 2 );
+            win_y = object_y - ( (window_search_height - tpl_height) / 2 );
+            flag_track = 0;
+          }
         }
       }
 
@@ -436,7 +449,7 @@ namespace Vision
         //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg"); //for axis cam
         //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //for stream video
         capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
-        while ( capture  == 0 && cnt < 4)
+        while ( capture  == 0 && cnt < 4 && !stopping())
         {
           inf("\n\tERROR OPEN CAM\n");
           capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0");
