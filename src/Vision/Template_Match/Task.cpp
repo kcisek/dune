@@ -31,6 +31,11 @@
 //OpenCV headers
 #include <opencv2/opencv.hpp>
 
+//RaspiCAM headers
+#ifdef __arm__
+#include "RaspiCamCV.h"
+#endif
+
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
@@ -39,7 +44,7 @@ namespace Vision
   namespace Template_Match
   {
     using DUNE_NAMESPACES;
-
+    
     struct Arguments
     {
       //window search size
@@ -53,8 +58,19 @@ namespace Vision
     struct Task: public DUNE::Tasks::Task
     {
       //!Variables
+      #ifdef __arm__
+      //RaspiCam config
+      RASPIVID_CONFIG * config;
+      //Capture struct - OpenCV/RaspiCAM
+      RaspiCamCvCapture* capture;
+      #else
+      //Capture struct - OpenCV
+      CvCapture* capture;
+      #endif
       //Read time and data
       struct tm* local;
+      //IplImage image_capture
+      IplImage* img;
       //IplImage main
       IplImage* frame;
       //IplImage template match
@@ -63,8 +79,6 @@ namespace Vision
       IplImage* tm;
       //IplImage Backup of main for debug
       IplImage* back;
-      //Capture struct - OpenCV
-      CvCapture* capture;
       //Buffer for video frame
       CvVideoWriter *writer;
       //Define Font Letter OpenCV
@@ -85,6 +99,10 @@ namespace Vision
       int window_search_width;
       //search window height
       int window_search_height;
+      //width Inic
+      int inic_width;
+      //height Inic
+      int inic_height;
       //sensibility of detection of tpl
       double threshold;
       //key press
@@ -134,14 +152,14 @@ namespace Vision
       int day;
       int mon;
       int year;
-    
+      
       //! Task arguments.
       Arguments m_args;
       //! Constructor.
       //! @param[in] name task name.
       //! @param[in] ctx context.
       Task(const std::string& name, Tasks::Context& ctx):
-        DUNE::Tasks::Task(name, ctx)
+      DUNE::Tasks::Task(name, ctx)
       {
         param("Window Search Size", m_args.window_search_size)
         .defaultValue("180")
@@ -161,31 +179,31 @@ namespace Vision
         .maximumValue("12")
         .description("Number of repetitions before the tpl refresh");
       }
-
+      
       //! Update internal state with new parameter values.
       void
       onUpdateParameters(void)
       {
       }
-
+      
       //! Reserve entity identifiers.
       void
       onEntityReservation(void)
       {
       }
-
+      
       //! Resolve entity names.
       void
       onEntityResolution(void)
       {
       }
-
+      
       //! Acquire resources.
       void
       onResourceAcquisition(void)
       {
       }
-
+      
       //! Initialize resources.
       void
       onResourceInitialization(void)
@@ -197,7 +215,7 @@ namespace Vision
         m_args.window_search_size = 110;
         m_args.tpl_size = 60;
       }
-
+      
       //! Release resources.
       void
       onResourceRelease(void)
@@ -232,12 +250,12 @@ namespace Vision
       void 
       InicValues(void)
       {
-        tpl_width = 100;
-        tpl_height = 100;
-        window_search_width = 210;
-        window_search_height = 210;
-        m_args.window_search_size = 210;
-        m_args.tpl_size = 100;
+        tpl_width = 60;
+        tpl_height = 60;
+        window_search_width = 110;
+        window_search_height = 110;
+        m_args.window_search_size = 110;
+        m_args.tpl_size = 60;
         threshold = 0.3;
         cnt = 0;
         flag_track = 0;
@@ -245,6 +263,22 @@ namespace Vision
         flag_start = 0;
         flag_stat_video = 0;
         flag_options = 0;
+        inic_width = 480;
+        inic_height = 360;
+        
+        #ifdef __arm__
+        config = (RASPIVID_CONFIG*)malloc(sizeof(RASPIVID_CONFIG));
+        config->width = inic_width;
+        config->height = inic_height;
+        config->bitrate = 0; // zero: leave as default
+        config->framerate = 12;
+        config->monochrome = 0;
+        inic_width = 480;
+        inic_height = 360;
+        #else
+        inic_width = 640;
+        inic_height = 480;
+        #endif
       }
       
       /* Save Video Frame Result */
@@ -337,7 +371,7 @@ namespace Vision
           object_y = y_mouse - ( tpl_height / 2 );        
           
           if ( (tpl_width  / 2) + x_mouse > frame_width || (tpl_height / 2) + y_mouse > frame_height || x_mouse - (tpl_width / 2) < 0 
-|| y_mouse - (tpl_height / 2) < 0)
+            || y_mouse - (tpl_height / 2) < 0)
             inf("\nSmall space\n");
           else
           {
@@ -364,9 +398,9 @@ namespace Vision
         /* setup position of search window */
         win_x = object_x - ( (window_search_width  - tpl_width) / 2 );
         win_y = object_y - ( (window_search_height - tpl_height) / 2 );
-
+        
         /****************************** Window margins of tracking *******************************/
-                
+        
         if ( (win_x+(window_search_width/2) - (window_search_width/2)) <= 1)
           flag_track = 1;
         else if ( (win_x + window_search_width) >= frame_width)
@@ -377,7 +411,7 @@ namespace Vision
           flag_track = 4;
         else
           flag_track = 0;
-
+        
         /***************************************************************************/
         /* search object in search window */
         if (flag_track == 0)
@@ -398,12 +432,12 @@ namespace Vision
           object_y = win_y + maxloc.y;
           
           /* draw a box there */
-          cvRectangle( back, cvPoint( object_x, object_y ), cvPoint( object_x + tpl_width, object_y + tpl_height ), cvScalar( 0, 255, 
-0, 0 ), 2, 0, 0 );
+          cvRectangle( back, cvPoint( object_x, object_y ), cvPoint( object_x + tpl_width, object_y + tpl_height ), cvScalar( 0, 255, 0, 
+0 ), 2, 0, 0 );
           cvRectangle( back, cvPoint( win_x, win_y ), cvPoint( win_x + window_search_width, win_y + window_search_height ), cvScalar( 
-255, 0, 0, 0 ), 2, 0, 0 );
+          255, 0, 0, 0 ), 2, 0, 0 );
           cvCircle(back, cvPoint( object_x + tpl_width/2, object_y + tpl_height/2 ),3,cvScalar( 0, 255, 0, 0 ), 1, 8, 0);
-            
+          
           /*Refresh TPL*/
           cnt_refresh++;
           if (cnt_refresh > m_args.rep_tpl && m_args.rep_tpl != 0)
@@ -437,51 +471,77 @@ namespace Vision
           }
         }
       }
-
+      
       //! Main loop.
       void
       onMain(void)
       {
         //Initialize Values
         InicValues();
-       
+        
+        #ifdef __arm__
+        capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config);
+        #else
+        capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
         //capture = cvCaptureFromCAM(0);//for laptop cam
         //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg"); //for axis cam
         //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //for stream video
-        capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
+        #endif
+        
         while ( capture  == 0 && cnt < 4 && !stopping())
         {
           inf("\n\tERROR OPEN CAM\n");
-          capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0");
+          #ifdef __arm__
+          capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config);
+          #else
+          capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
           //capture = cvCaptureFromCAM(0);//for laptop cam
-          //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv");
-          //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg");
+          //capture = cvCaptureFromFile("http://10.0.20.112/axis-cgi/mjpg/video.cgi?.mjpg"); //for axis cam
+          //capture = cvCaptureFromFile("http://10.0.3.31:8080/video.wmv"); //for stream video
+          #endif
           cnt++;
           waitForMessages(1.0);
         }
-
+        
         //Capture Image
+        #ifdef __arm__
+        img = raspiCamCvQueryFrame(capture);
+        cvReleaseImage( &frame );
+        if (frame == 0 )
+          frame = cvCreateImage ( cvSize(inic_width, inic_height), img -> depth, img -> nChannels);
+        cvResize(img, frame);
+        #else
         frame = cvQueryFrame( capture );
+        #endif
         //Size of Image capture
         frame_width = frame -> width;
         frame_height = frame -> height;
-
+        
         /* create template image */
         tpl = cvCreateImage( cvSize( tpl_width, tpl_height), frame->depth, frame->nChannels );
         /* create image for template matching result */
         tm = cvCreateImage( cvSize( window_search_width - tpl_width + 1, window_search_height - tpl_height + 1), IPL_DEPTH_32F, 1 );
-
+        
         //Window Name
         cvNamedWindow( "Live Video" , 0);
-        cvResizeWindow( "Live Video" , 640, 480);
+        cvResizeWindow( "Live Video" , inic_width, inic_height);
         //Calback for mouse click
         cvSetMouseCallback( "Live Video", MouseWrapper, this);
-       
+        
         cvInitFont(&font, CV_FONT_HERSHEY_SIMPLEX, 0.5, 0.5, 0, 1.5, CV_AA);
-
+        
         while (!stopping())
         {
+          #ifdef __arm__
+          img = raspiCamCvQueryFrame(capture);
+          cvReleaseImage( &frame );
+          if (frame == 0 )
+            frame = cvCreateImage ( cvSize(inic_width, inic_height), img -> depth, img -> nChannels);
+          cvResize(img, frame);
+          #else
           frame = cvQueryFrame( capture );
+          #endif
+          
           if ( !capture )
           {
             inf("\n\tERROR GRAB IMAGE\n");
@@ -489,10 +549,10 @@ namespace Vision
           
           /*clone Image for debud */
           back = cvCloneImage( frame );
-            
+          
           /* perform tracking if template is available */
           if ( is_tracking ) TrackObject();
-            
+          
           //Add information in frame result
           time_acquisition();
           sprintf(text,"%d",object_x + tpl_width/2);
@@ -516,7 +576,7 @@ namespace Vision
 0), 20, 1);
           DashedLine(back, cvPoint(frame_width/2, 0), cvPoint(frame_width/2, frame_height), cvScalar(255, 255, 255, 0), 20, 0);
           DashedLine(back, cvPoint(0, frame_height/2), cvPoint(frame_width, frame_height/2), cvScalar(255, 255, 255, 0), 20, 1);
-            
+          
           //Save video
           if ( flag_start )
           {
@@ -545,11 +605,11 @@ namespace Vision
           {
             cvDestroyWindow( "Live Video" );
             cvNamedWindow( "Live Video" , 0);
-            cvResizeWindow( "Live Video" , 640, 480);
+            cvResizeWindow( "Live Video" , inic_width, inic_height);
             cvSetMouseCallback( "Live Video", MouseWrapper, this);
             key = 'l';
           }
-            
+          
           //if size of window change
           if (window_search_height != m_args.window_search_size)
           {
@@ -558,15 +618,23 @@ namespace Vision
             cvReleaseImage( &tm );
             tm = cvCreateImage( cvSize( window_search_width - tpl_width + 1, window_search_height - tpl_height + 1), IPL_DEPTH_32F, 1);
           }
+          //if size of tpl change
+          if (tpl_height != m_args.tpl_size)
+          {
+            tpl_height = m_args.tpl_size;
+            tpl_width = m_args.tpl_size;
+            cvSetImageROI( frame, cvRect( object_x, object_y, tpl_width, tpl_height) );
+            cvReleaseImage( &tpl );
+            cvReleaseImage( &tm );
+            tm = cvCreateImage( cvSize( window_search_width - tpl_width  + 1, window_search_height - tpl_height + 1), IPL_DEPTH_32F, 1);
+            tpl = cvCreateImage( cvSize( tpl_width, tpl_height ), frame->depth, frame->nChannels );
+            cvCopy( frame, tpl);
+            cvResetImageROI( frame );
+          }
           
           if ( m_args.window_search_size <= m_args.tpl_size)
             m_args.window_search_size = m_args.tpl_size + 10;
-          
-          window_search_height = m_args.window_search_size;
-          window_search_width = m_args.window_search_size;
-          tpl_height = m_args.tpl_size;
-          tpl_width = m_args.tpl_size;
-            
+                   
           key = cvWaitKey(10);
           // Save Snapshot
           if ( key == 's' || key == 'S')
@@ -577,11 +645,16 @@ namespace Vision
           // Show/hide Menu parameters
           if ( key == 'm' || key == 'M')
             flag_options = !flag_options;
-                
+          
           cvReleaseImage( &back );
         }
         cvDestroyWindow( "Live Video" );
+        #ifdef __arm__
+        raspiCamCvReleaseCapture( &capture );
+        #else
         cvReleaseCapture(&capture);
+        #endif
+        
       }
     };
   }
