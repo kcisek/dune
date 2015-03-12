@@ -41,7 +41,7 @@
 
 namespace Vision
 {
-  namespace Color_Detect
+  namespace Color_Tracking
   {
     using DUNE_NAMESPACES;
     
