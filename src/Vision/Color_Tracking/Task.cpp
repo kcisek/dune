@@ -59,6 +59,10 @@ namespace Vision
       int ilow_b;
       //High Blue value
       int ihigh_b;
+      //Min area of color mass
+      int min_area;
+      //Max area of color mass
+      int max_area;
     };
     
     struct Task: public DUNE::Tasks::Task
@@ -79,6 +83,12 @@ namespace Vision
       IplImage* img;
       //IplImage main
       IplImage* frame;
+      //Step of data image
+      int step;
+      //Image data
+      uchar* data;
+      //Number of channels of image
+      int channels;
       //Threshold imageof main frame
       IplImage* threshold_img;
       //Buffer for video frame
@@ -174,6 +184,18 @@ namespace Vision
         .minimumValue("0")
         .maximumValue("255")
         .description("High Blue value");
+
+        param("Min area of color mass", m_args.min_area)
+        .defaultValue("50")
+        .minimumValue("0")
+        .maximumValue("6000")
+        .description("Min area of color mass");
+        
+        param("Max area of color mass", m_args.max_area)
+        .defaultValue("1100")
+        .minimumValue("0")
+        .maximumValue("6000")
+        .description("Max area of color mass");
       }
       //! Update internal state with new parameter values.
       void
@@ -338,10 +360,18 @@ namespace Vision
       MouseHandler( int event, int x, int y, int flags, void*)
       {
         button = flags;
-        /* user clicked the image, save subimage as template */
+        /* user clicked the image, save pixel color */
         if ( event == CV_EVENT_LBUTTONUP )
         {
-          
+          step  = frame->widthStep;
+          data = (uchar*) frame->imageData;
+          channels= frame->nChannels;
+          m_args.ilow_b = data[y*step + x*channels] - 10;
+          m_args.ihigh_b = data[y*step + x*channels] + 10;
+          m_args.ilow_g = data[y*step + x*channels+1] - 10;
+          m_args.ihigh_g = data[y*step + x*channels+1] + 10;
+          m_args.ilow_r = data[y*step + x*channels+2] - 10;
+          m_args.ihigh_r = data[y*step + x*channels+2] + 10;
         }
       }
       /* mouse handler - STATIC */
@@ -377,12 +407,15 @@ m_args.ihigh_r, 0), threshold_img);
         moment10 = cvGetSpatialMoment(moments, 1, 0);
         moment01 = cvGetSpatialMoment(moments, 0, 1);
         area = cvGetCentralMoment(moments, 0, 0);
-        if (area > 100 && area < 1500)
+        if (area > m_args.min_area && area < m_args.max_area)
         {
           //Calculating the current position
           object_x = moment10/area;
           object_y = moment01/area;
-        } 
+          cvCircle(frame, cvPoint( object_x, object_y ), 20, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+        }
+        else
+          cvCircle(frame, cvPoint( object_x, object_y ), 20, cvScalar( 55, 180, 240, 0 ), 2, 8, 0);
       }
       /* Check if the news values are correct */
       void
@@ -394,6 +427,8 @@ m_args.ihigh_r, 0), threshold_img);
           m_args.ihigh_g = m_args.ilow_g + 1;   
         if (m_args.ilow_r > m_args.ihigh_r)
           m_args.ihigh_r = m_args.ilow_r + 1;
+        if (m_args.min_area > m_args.max_area)
+          m_args.max_area = m_args.min_area + 10;
       }
       //! Main loop.
       void
@@ -472,7 +507,8 @@ m_args.ihigh_r, 0), threshold_img);
           cvPutText(frame, text, cvPoint(10, 20), &font, cvScalar(70, 70, 70, 0));
           sprintf(text,"Data: %d/%d/%d",day,mon,year);
           cvPutText(frame, text, cvPoint(10, 42), &font, cvScalar(70, 70, 70, 0));
-          cvCircle(frame, cvPoint( object_x, object_y ), 20, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+          sprintf(text,"Menu - key 'm'");
+          cvPutText(frame, text, cvPoint(10, 64), &font, cvScalar(150, 240, 150, 0));
           text[0]='\0';
          
           //Save video
@@ -503,6 +539,8 @@ m_args.ihigh_r, 0), threshold_img);
             cvCreateTrackbar("High Green value", "Threshold", &m_args.ihigh_g, 255, 0);
             cvCreateTrackbar("Low Blue value", "Threshold", &m_args.ilow_b, 255, 0);
             cvCreateTrackbar("High Blue value", "Threshold", &m_args.ihigh_b, 255, 0);
+            cvCreateTrackbar("Min area", "Threshold", &m_args.min_area, 6000, 0);
+            cvCreateTrackbar("Max area", "Threshold", &m_args.max_area, 6000, 0);
           }
           else if ( !flag_options && key == 'm' )
           {
