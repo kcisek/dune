@@ -31,8 +31,14 @@
 //OpenCV headers
 #include <opencv2/opencv.hpp>
 
+//cvBlob headers
+#include<cvblob.h>
+
+//Enable(1) / disable(0) support for Raspicam
+#define raspicam_on 0
+
 //RaspiCAM headers
-#ifdef __arm__
+#if raspicam_on == 1
 #include "RaspiCamCV.h"
 #endif
 
@@ -68,7 +74,7 @@ namespace Vision
     struct Task: public DUNE::Tasks::Task
     {
       //!Variables
-      #ifdef __arm__
+      #if raspicam_on == 1
       //RaspiCam config
       RASPIVID_CONFIG * config;
       //Capture struct - OpenCV/RaspiCAM
@@ -77,20 +83,24 @@ namespace Vision
       //Capture struct - OpenCV
       CvCapture* capture;
       #endif
+      //Structure to hold blobs
+      cvb::CvBlobs blobs;
       //Read time and data
       struct tm* local;
-      //IplImage image_capture
-      IplImage* img;
       //IplImage main
       IplImage* frame;
+      //IplImage template
+      IplImage* tpl;
       //Step of data image
       int step;
       //Image data
       uchar* data;
       //Number of channels of image
       int channels;
-      //Threshold imageof main frame
+      //Threshold image of main frame
       IplImage* threshold_img;
+      //Label image of mass color
+      IplImage* labelImg;
       //Buffer for video frame
       CvVideoWriter *writer;
       //Define Font Letter OpenCV
@@ -107,6 +117,10 @@ namespace Vision
       int frame_width;
       //Main frame height
       int frame_height;
+      //Tpl width
+      int tpl_width;
+      //TPL height
+      int tpl_height;
       //width Inic
       int inic_width;
       //height Inic
@@ -123,6 +137,10 @@ namespace Vision
       int object_x;
       //Position of 1º Pixel of TPL in height
       int object_y;
+      //search window x pixel
+      int win_x;
+      //search window y pixel
+      int win_y;
       //button press of mouse
       int button;
       //Global counter
@@ -133,6 +151,12 @@ namespace Vision
       bool flag_stat_video;
       //Flag - start record
       bool flag_start;
+      //start tracking
+      bool start;
+      //flag full frame
+      bool full_frame;
+      //Find Mass color flag
+      bool ok_mass;
       //!Variables Time
       int hour;
       int min;
@@ -186,13 +210,13 @@ namespace Vision
         .description("High Blue value");
 
         param("Min area of color mass", m_args.min_area)
-        .defaultValue("50")
+        .defaultValue("250")
         .minimumValue("0")
         .maximumValue("6000")
         .description("Min area of color mass");
         
         param("Max area of color mass", m_args.max_area)
-        .defaultValue("1100")
+        .defaultValue("2600")
         .minimumValue("0")
         .maximumValue("6000")
         .description("Max area of color mass");
@@ -267,16 +291,20 @@ namespace Vision
         flag_start = 0;
         flag_stat_video = 0;
         flag_options = 0;
+        tpl_height = 60;
+        tpl_width = 60;
+        start = 0;
+        full_frame = 1;
         
-        #ifdef __arm__
+        #if raspicam_on == 1
+        inic_width = 320;
+        inic_height = 240;
         config = (RASPIVID_CONFIG*)malloc(sizeof(RASPIVID_CONFIG));
         config->width = inic_width;
         config->height = inic_height;
         config->bitrate = 0; // zero: leave as default
         config->framerate = 24;
         config->monochrome = 0;
-        inic_width = 480;
-        inic_height = 360;
         #else
         inic_width = 640;
         inic_height = 480;
@@ -372,6 +400,22 @@ namespace Vision
           m_args.ihigh_g = data[y*step + x*channels+1] + 10;
           m_args.ilow_r = data[y*step + x*channels+2] - 10;
           m_args.ihigh_r = data[y*step + x*channels+2] + 10;
+          /* save tpl of position of pixel color */
+          cvReleaseImage( &tpl );
+          tpl = cvCreateImage( cvSize( tpl_width, tpl_height ), frame->depth, frame->nChannels );
+          win_x = x - ( tpl_width  / 2 );
+          win_y = y - ( tpl_height / 2 );
+          if ( (tpl_width  / 2) + x > frame_width || (tpl_height / 2) + y > frame_height || x - (tpl_width / 2) < 0 
+            || y - (tpl_height / 2) < 0)
+            inf("\nSmall space\n");
+          else
+          {
+            cvSetImageROI( frame, cvRect( win_x, win_y, tpl_width, tpl_height) );
+            cvCopy( frame, tpl, NULL );
+            cvResetImageROI( frame );
+          }
+          start = 1;
+          full_frame = 0;
         }
       }
       /* mouse handler - STATIC */
@@ -386,36 +430,81 @@ namespace Vision
       void
       TrackColor()
       {
-        cvReleaseImage( &threshold_img );
-        if ( threshold_img == 0 )
-          threshold_img = cvCreateImage( cvGetSize(frame), 8, 1);
         
-        cvInRangeS(frame, cvScalar(m_args.ilow_b, m_args.ilow_g, m_args.ilow_r, 0), cvScalar(m_args.ihigh_b, m_args.ihigh_g, 
-m_args.ihigh_r, 0), threshold_img);
-        
-        //morphological opening (removes small objects from the foreground)
-        cvErode(threshold_img, threshold_img, 0, 1);
-        cvDilate(threshold_img, threshold_img, 0, 1);
-        //morphological closing (removes small holes from the foreground)
-        cvDilate(threshold_img, threshold_img, 0, 1);
-        cvErode(threshold_img, threshold_img, 0, 1);
-        
-        //Calculating the moments
-        moments = (CvMoments*)malloc(sizeof(CvMoments));
-        cvMoments(threshold_img, moments, 1);
-        // The actual moment values
-        moment10 = cvGetSpatialMoment(moments, 1, 0);
-        moment01 = cvGetSpatialMoment(moments, 0, 1);
-        area = cvGetCentralMoment(moments, 0, 0);
-        if (area > m_args.min_area && area < m_args.max_area)
+        if ( (tpl_width  / 2) + win_x > frame_width || (tpl_height / 2) + win_y > frame_height || win_x - (tpl_width / 2) < 0 
+          || win_y - (tpl_height / 2) < 0 || full_frame == 1)
         {
-          //Calculating the current position
-          object_x = moment10/area;
-          object_y = moment01/area;
-          cvCircle(frame, cvPoint( object_x, object_y ), 20, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+          cvReleaseImage( &labelImg );
+          cvReleaseImage( &threshold_img );
+          if(labelImg == NULL)
+            labelImg = cvCreateImage(cvGetSize(frame),IPL_DEPTH_LABEL,1);//Image Variable for blobs
+          if ( threshold_img == NULL )
+            threshold_img = cvCreateImage( cvGetSize(frame), 8, 1);
+          cvInRangeS(frame, cvScalar(m_args.ilow_b, m_args.ilow_g, m_args.ilow_r, 0), cvScalar(m_args.ihigh_b, 
+m_args.ihigh_g, m_args.ihigh_r, 0), threshold_img);
+          full_frame = 1;
         }
         else
-          cvCircle(frame, cvPoint( object_x, object_y ), 20, cvScalar( 55, 180, 240, 0 ), 2, 8, 0);
+        {
+          cvSetImageROI( frame, cvRect( win_x, win_y, tpl_width, tpl_height) );
+          cvCopy( frame, tpl, NULL );
+          cvResetImageROI( frame );
+          cvReleaseImage( &labelImg );
+          cvReleaseImage( &threshold_img );
+          if (labelImg == NULL)
+            labelImg = cvCreateImage(cvGetSize(tpl),IPL_DEPTH_LABEL,1);//Image Variable for blobs
+          if ( threshold_img == NULL )
+            threshold_img = cvCreateImage( cvGetSize(tpl), 8, 1);
+          cvInRangeS(tpl, cvScalar(m_args.ilow_b, m_args.ilow_g, m_args.ilow_r, 0), cvScalar(m_args.ihigh_b, 
+m_args.ihigh_g, m_args.ihigh_r, 0), threshold_img);
+        }
+      
+        //Finding the blobs
+        cvLabel(threshold_img, labelImg, blobs);
+        //filter blobs by size
+        cvFilterByArea(blobs, m_args.min_area, m_args.max_area);
+        
+        ok_mass = 0;
+        //Calculating the current position
+        for (cvb::CvBlobs::const_iterator it=blobs.begin(); it!=blobs.end(); ++it)
+        {
+          moment10 = it->second->m10;
+          moment01 = it->second->m01;
+          area = it->second->area;
+
+          if (full_frame == 0)
+          {
+            object_x = moment10/area;
+            object_y = moment01/area;
+            win_x = win_x + object_x;
+            win_y = win_y + object_y;
+            //Draw axis in frame result; 0 -> vertical, 1 -> horizontal
+            DashedLine(frame, cvPoint(win_x, 0), cvPoint(win_x, frame_height), cvScalar(0, 100, 255, 0), 20, 0);
+            DashedLine(frame, cvPoint(0, win_y), cvPoint(frame_width, win_y), cvScalar(0, 100, 255, 0), 20, 1);
+            cvCircle(frame, cvPoint( win_x, win_y), 4, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+            cvCircle(frame, cvPoint( win_x, win_y), 14, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+            win_x = win_x - (tpl_width / 2);
+            win_y = win_y - (tpl_height / 2);
+          }
+          else if (full_frame == 1)
+          {
+            object_x = moment10/area;
+            object_y = moment01/area;
+            win_x = object_x - (tpl_width/2);
+            win_y = object_y - (tpl_width/2);
+            //Draw axis in frame result; 0 -> vertical, 1 -> horizontal
+            DashedLine(frame, cvPoint(object_x, 0), cvPoint(object_x, frame_height), cvScalar(0, 100, 255, 0), 20, 0);
+            DashedLine(frame, cvPoint(0, object_y), cvPoint(frame_width, object_y), cvScalar(0, 100, 255, 0), 20, 1);
+            cvCircle(frame, cvPoint( object_x, object_y ), 4, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+            cvCircle(frame, cvPoint( object_x, object_y ), 14, cvScalar( 240, 180, 55, 0 ), 2, 8, 0);
+            full_frame = 0;
+          }
+          ok_mass = 1;
+        }
+        if (!ok_mass)
+        {
+          cvCircle(frame, cvPoint(frame_width - 10, frame_height -10), 4, cvScalar( 0, 0, 255, 0 ), 2, 4, 0);
+        }
       }
       /* Check if the news values are correct */
       void
@@ -437,7 +526,7 @@ m_args.ihigh_r, 0), threshold_img);
         //Initialize Values
         InicValues();
         
-        #ifdef __arm__
+        #if raspicam_on == 1
         capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config);
         #else
         capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
@@ -449,7 +538,7 @@ m_args.ihigh_r, 0), threshold_img);
         while ( capture  == 0 && cnt < 4 && !stopping())
         {
           inf("\n\tERROR OPEN CAM\n");
-          #ifdef __arm__
+          #if raspicam_on == 1
           capture = (RaspiCamCvCapture *) raspiCamCvCreateCameraCapture2(0, config);
           #else
           capture = cvCaptureFromFile("rtsp://10.0.20.207:554/live/ch00_0"); //for airvision mini SENS-11
@@ -462,12 +551,8 @@ m_args.ihigh_r, 0), threshold_img);
         }
         
         //Capture Image
-        #ifdef __arm__
-        img = raspiCamCvQueryFrame(capture);
-        cvReleaseImage( &frame );
-        if (frame == 0 )
-          frame = cvCreateImage ( cvSize(inic_width, inic_height), img -> depth, img -> nChannels);
-        cvResize(img, frame);
+        #if raspicam_on == 1
+        frame = raspiCamCvQueryFrame(capture);
         #else
         frame = cvQueryFrame( capture );
         #endif
@@ -484,12 +569,8 @@ m_args.ihigh_r, 0), threshold_img);
         
         while (!stopping())
         {
-          #ifdef __arm__
-          img = raspiCamCvQueryFrame(capture);
-          cvReleaseImage( &frame );
-          if (frame == 0 )
-            frame = cvCreateImage ( cvSize(inic_width, inic_height), img -> depth, img -> nChannels);
-          cvResize(img, frame);
+          #if raspicam_on == 1
+          frame = raspiCamCvQueryFrame(capture);
           #else
           frame = cvQueryFrame( capture );
           #endif
@@ -498,15 +579,16 @@ m_args.ihigh_r, 0), threshold_img);
           {
             inf("\n\tERROR GRAB IMAGE\n");
           }
-                   
-          TrackColor();
+          
+          if( start )
+            TrackColor();
           
           //Add information in frame result
           time_acquisition();
           sprintf(text,"Hour: %d:%d:%d",hour,min,sec);
-          cvPutText(frame, text, cvPoint(10, 20), &font, cvScalar(70, 70, 70, 0));
+          cvPutText(frame, text, cvPoint(10, 20), &font, cvScalar(255, 200, 100, 0));
           sprintf(text,"Data: %d/%d/%d",day,mon,year);
-          cvPutText(frame, text, cvPoint(10, 42), &font, cvScalar(70, 70, 70, 0));
+          cvPutText(frame, text, cvPoint(10, 42), &font, cvScalar(255, 200, 100, 0));
           sprintf(text,"Menu - key 'm'");
           cvPutText(frame, text, cvPoint(10, 64), &font, cvScalar(150, 240, 150, 0));
           text[0]='\0';
@@ -526,31 +608,37 @@ m_args.ihigh_r, 0), threshold_img);
             save_video( frame, 0);
             cvCircle(frame, cvPoint( frame_width - 20, 20 ), 4, cvScalar( 0, 255, 0, 0 ), 5, 8, 0);
           }
-          
-          //Showm Image - Result
-          cvShowImage( "Live Video", frame);
          
           if ( flag_options )
           {
             cvShowImage("Threshold", threshold_img);
-            cvCreateTrackbar("Low Red value", "Threshold", &m_args.ilow_r, 255, 0);
-            cvCreateTrackbar("High Red value", "Threshold", &m_args.ihigh_r, 255, 0);
-            cvCreateTrackbar("Low Green value", "Threshold", &m_args.ilow_g, 255, 0);
-            cvCreateTrackbar("High Green value", "Threshold", &m_args.ihigh_g, 255, 0);
-            cvCreateTrackbar("Low Blue value", "Threshold", &m_args.ilow_b, 255, 0);
-            cvCreateTrackbar("High Blue value", "Threshold", &m_args.ihigh_b, 255, 0);
-            cvCreateTrackbar("Min area", "Threshold", &m_args.min_area, 6000, 0);
-            cvCreateTrackbar("Max area", "Threshold", &m_args.max_area, 6000, 0);
+            cvNamedWindow( "Parameters" , 0);
+            cvCreateTrackbar("Low Red value", "Parameters", &m_args.ilow_r, 255, 0);
+            cvCreateTrackbar("High Red value", "Parameters", &m_args.ihigh_r, 255, 0);
+            cvCreateTrackbar("Low Green value", "Parameters", &m_args.ilow_g, 255, 0);
+            cvCreateTrackbar("High Green value", "Parameters", &m_args.ihigh_g, 255, 0);
+            cvCreateTrackbar("Low Blue value", "Parameters", &m_args.ilow_b, 255, 0);
+            cvCreateTrackbar("High Blue value", "Parameters", &m_args.ihigh_b, 255, 0);
+            cvCreateTrackbar("Min area", "Parameters", &m_args.min_area, 6000, 0);
+            cvCreateTrackbar("Max area", "Parameters", &m_args.max_area, 6000, 0);
           }
           else if ( !flag_options && key == 'm' )
           {
             cvDestroyWindow( "Threshold" );
+            cvDestroyWindow( "Parameters" );
             key = 'l';
           }
+         
+          DashedLine(frame, cvPoint(frame_width/2, 0), cvPoint(frame_width/2, frame_height), cvScalar(255, 255, 255, 0), 20, 0);
+          DashedLine(frame, cvPoint(0, frame_height/2), cvPoint(frame_width, frame_height/2), cvScalar(255, 255, 255, 0), 20, 1);
+          
+          
+          //Showm Image - Result
+          cvShowImage( "Live Video", frame);
           
           CheckNewValues();
                    
-          key = cvWaitKey(1000/24);
+          key = cvWaitKey(8);
           // Save Snapshot
           if ( key == 's' || key == 'S')
             save_image( frame );
@@ -562,7 +650,7 @@ m_args.ihigh_r, 0), threshold_img);
             flag_options = !flag_options;
         }
         cvDestroyWindow( "Live Video" );
-        #ifdef __arm__
+        #if raspicam_on == 1
         raspiCamCvReleaseCapture( &capture );
         #else
         cvReleaseCapture(&capture);
