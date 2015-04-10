@@ -79,10 +79,6 @@ namespace Transports
       float m_fuel_level;
       //! Last fuel level confidence.
       float m_fuel_conf;
-      //! Saved plan control.
-      IMC::PlanControl* m_pc;
-      //! Report timer.
-      Counter<double> m_rep_timer;
       //! Sequence number.
       uint16_t m_seq;
       //! Last acoustic operation.
@@ -98,11 +94,6 @@ namespace Transports
         m_seq(0),
         m_last_acop(NULL)
       {
-        // Define configuration parameters.
-        paramActive(Tasks::Parameter::SCOPE_MANEUVER,
-                    Tasks::Parameter::VISIBILITY_USER,
-                    true);
-
         param(DTR_RT("Enable Reports"), m_args.report_enable)
         .visibility(Tasks::Parameter::VISIBILITY_USER)
         .defaultValue("false")
@@ -135,7 +126,7 @@ namespace Transports
       onUpdateParameters(void)
       {
         if (paramChanged(m_args.report_period))
-          m_rep_timer.setTop(m_args.report_period);
+          m_report_timer.setTop(m_args.report_period);
       }
 
       //! Initialize resources.
@@ -147,22 +138,9 @@ namespace Transports
         + URL::encode(getEntityLabel());
         dispatch(announce);
 
-        m_rep_timer.reset();
+        m_report_timer.reset();
 
-        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_IDLE);
-      }
-
-      void
-      onActivation(void)
-      {
         setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
-        m_rep_timer.reset();
-      }
-
-      void
-      onDeactivation(void)
-      {
-        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_IDLE);
       }
 
       //! Release resources.
@@ -579,13 +557,14 @@ namespace Transports
         {
           waitForMessages(1.0);
 
-          if (m_args.report_enable && isActive())
+          // Reset timer.
+          if (m_report_timer.overflow())
           {
-            if (m_rep_timer.overflow())
-            {
-              m_rep_timer.reset();
+            m_report_timer.reset();
+
+            // Report status.
+            if (m_args.report_enable)
               sendReport();
-            }
           }
         }
       }
