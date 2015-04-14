@@ -51,6 +51,8 @@ namespace Maneuver
         uint8_t z_units;
       };
 
+      //! Desired path message.
+      IMC::DesiredPath m_path;
       //! Vector of waypoints.
       std::vector<Waypoint> m_wpts;
       //! Current waypoint.
