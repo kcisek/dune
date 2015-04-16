@@ -326,6 +326,13 @@ namespace DUNE
           parse(cfg, id, ccalib);
           pman.data.set(ccalib);
         }
+        else if (type == "FormationPathFollowing")
+        {
+          IMC::FormationPathFollowing fpf;
+          parse(cfg, id, fpf);
+          pman.data.set(fpf);
+
+        }
         else
         {
           DUNE_ERR
