@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: 056f74d7c9d645b96bb2dec99fe07fbd                            *
+// IMC XML MD5: af98040a668ab274b133e78bcb2f376e                            *
 //***************************************************************************
 
 #ifndef DUNE_IMC_DEFINITIONS_HPP_INCLUDED_
@@ -12919,7 +12919,7 @@ namespace DUNE
     };
 
     //! Formation Path Following Maneuver.
-    class FormationPathFollowing: public Message
+    class FormationPathFollowing: public Maneuver
     {
     public:
       //! Timeout.
