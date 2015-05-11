@@ -337,7 +337,7 @@ namespace Plan
           else
           {
             IMC::PlanTransition trans;
-            trans.conditions = "maneuverIsDone";
+            trans.conditions = "ManeuverIsDone";
             trans.dest_man = man_spec.maneuver_id;
             trans.source_man = last_man.maneuver_id;
 
@@ -435,7 +435,7 @@ namespace Plan
           }
 
           // if some latitude / longitude was given, goes there
-          if (lat != 0 || lon != 0)
+          if (lat != 0 && lon != 0)
           {
             IMC::MessageList<IMC::Maneuver> maneuvers;
 
