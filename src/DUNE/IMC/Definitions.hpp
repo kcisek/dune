@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: bd24744a7b3932c3a956ddc60e9abdd6                            *
+// IMC XML MD5: 4631fbae2e9f14ef8e52f3a1d74d2813                            *
 //***************************************************************************
 
 #ifndef DUNE_IMC_DEFINITIONS_HPP_INCLUDED_
@@ -19139,6 +19139,75 @@ namespace DUNE
       {
         return 0;
       }
+    };
+
+    //! Parser Output.
+    class ParserOutput: public Message
+    {
+    public:
+      //! Result.
+      std::string result;
+      //! Source Entity Label.
+      std::string source_entity;
+
+      static uint16_t
+      getIdStatic(void)
+      {
+        return 895;
+      }
+
+      ParserOutput(void);
+
+      Message*
+      clone(void) const
+      {
+        return new ParserOutput(*this);
+      }
+
+      void
+      clear(void);
+
+      bool
+      fieldsEqual(const Message& msg__) const;
+
+      int
+      validate(void) const;
+
+      uint8_t*
+      serializeFields(uint8_t* bfr__) const;
+
+      uint16_t
+      deserializeFields(const uint8_t* bfr__, uint16_t size__);
+
+      uint16_t
+      reverseDeserializeFields(const uint8_t* bfr__, uint16_t size__);
+
+      uint16_t
+      getId(void) const
+      {
+        return ParserOutput::getIdStatic();
+      }
+
+      const char*
+      getName(void) const
+      {
+        return "ParserOutput";
+      }
+
+      unsigned
+      getFixedSerializationSize(void) const
+      {
+        return 0;
+      }
+
+      unsigned
+      getVariableSerializationSize(void) const
+      {
+        return IMC::getSerializationSize(result) + IMC::getSerializationSize(source_entity);
+      }
+
+      void
+      fieldsToJSON(std::ostream& os__, unsigned nindent__) const;
     };
   }
 }

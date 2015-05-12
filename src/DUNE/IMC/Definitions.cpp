@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: bd24744a7b3932c3a956ddc60e9abdd6                            *
+// IMC XML MD5: 4631fbae2e9f14ef8e52f3a1d74d2813                            *
 //***************************************************************************
 
 // ISO C++ 98 headers.
@@ -19987,6 +19987,68 @@ namespace DUNE
       (void)bfr__;
       (void)size__;
       return 0;
+    }
+
+    ParserOutput::ParserOutput(void)
+    {
+      m_header.mgid = 895;
+      clear();
+    }
+
+    void
+    ParserOutput::clear(void)
+    {
+      result.clear();
+      source_entity.clear();
+    }
+
+    bool
+    ParserOutput::fieldsEqual(const Message& msg__) const
+    {
+      const IMC::ParserOutput& other__ = static_cast<const ParserOutput&>(msg__);
+      if (result != other__.result) return false;
+      if (source_entity != other__.source_entity) return false;
+      return true;
+    }
+
+    int
+    ParserOutput::validate(void) const
+    {
+      return false;
+    }
+
+    uint8_t*
+    ParserOutput::serializeFields(uint8_t* bfr__) const
+    {
+      uint8_t* ptr__ = bfr__;
+      ptr__ += IMC::serialize(result, ptr__);
+      ptr__ += IMC::serialize(source_entity, ptr__);
+      return ptr__;
+    }
+
+    uint16_t
+    ParserOutput::deserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::deserialize(result, bfr__, size__);
+      bfr__ += IMC::deserialize(source_entity, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    uint16_t
+    ParserOutput::reverseDeserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::reverseDeserialize(result, bfr__, size__);
+      bfr__ += IMC::reverseDeserialize(source_entity, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    void
+    ParserOutput::fieldsToJSON(std::ostream& os__, unsigned nindent__) const
+    {
+      IMC::toJSON(os__, "result", result, nindent__);
+      IMC::toJSON(os__, "source_entity", source_entity, nindent__);
     }
   }
 }
