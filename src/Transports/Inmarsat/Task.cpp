@@ -38,17 +38,6 @@ namespace Sensors
   {
     using DUNE_NAMESPACES;
 
-    //! Driver data fields.
-    /*enum DataFields
-    {
-      DF_AZIM = 1 << 0,
-      DF_PITCH = 1 << 1,
-      DF_ROLL = 1 << 2,
-      DF_TEMP = 1 << 3,
-      DF_MAG = 1 << 6,
-      DF_ACCEL = 1 << 8
-    };*/
-
 
     //! %Task arguments.
     struct Arguments
@@ -69,7 +58,8 @@ namespace Sensors
       static const unsigned c_bfr_size = 128;
       //! Serial port.
       SerialPort* m_uart;
-
+      //! Temperature.
+      IMC::Temperature m_temp;
       //! Internal read buffer.
       char m_bfr[c_bfr_size];
       //! Read timestamp.
@@ -90,7 +80,7 @@ namespace Sensors
         .description("Serial port device used to communicate with the sensor");
 
         param("Serial Port - Baud Rate", m_args.uart_baud)
-        .defaultValue("19200")
+        .defaultValue("9600")
         .description("Serial port baud rate");
 
         param("Data Timeout", m_args.data_tout)
@@ -225,14 +215,11 @@ namespace Sensors
 
           unsigned rcsum = 0;
           unsigned ccsum = XORChecksum::compute((uint8_t*)m_bfr + 1, rv - 1 - 5);
-
-          std::sscanf(m_bfr, "$C%lfP%lfR%lfT%fMx%lfMy%lfMz%lfAx%lfAy%lfAz%lf*%02X\r\n",
-                      &m_euler.psi_magnetic, &m_euler.theta, &m_euler.phi,
-                      &m_temp.value,
-                      &m_mag.x, &m_mag.y, &m_mag.z,
-                      &m_accel.x, &m_accel.y, &m_accel.z,
+          
+          std::sscanf(m_bfr, "$T%lf*%02X\r\n",
+                       &m_temp.value,
                       &rcsum);
-
+                      
           if (rcsum != ccsum)
             continue;
 
