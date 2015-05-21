@@ -31,7 +31,7 @@
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
-namespace Sensors
+namespace Transports
 {
   //! Device driver for the Inmarsat modem sensor.
   namespace Inmarsat
