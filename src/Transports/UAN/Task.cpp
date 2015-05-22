@@ -99,17 +99,15 @@ namespace Transports
         m_last_acop(NULL)
       {
         // Define configuration parameters.
-        paramActive(Tasks::Parameter::SCOPE_MANEUVER,
-                    Tasks::Parameter::VISIBILITY_USER,
-                    true);
-
         param(DTR_RT("Enable Reports"), m_args.report_enable)
         .visibility(Tasks::Parameter::VISIBILITY_USER)
+        .scope(Tasks::Parameter::SCOPE_MANEUVER)
         .defaultValue("false")
         .description("Enable system state reporting");
 
         param(DTR_RT("Reports Periodicity"), m_args.report_period)
         .visibility(Tasks::Parameter::VISIBILITY_USER)
+        .scope(Tasks::Parameter::SCOPE_MANEUVER)
         .units(Units::Second)
         .defaultValue("60")
         .minimumValue("30")
@@ -136,6 +134,19 @@ namespace Transports
       {
         if (paramChanged(m_args.report_period))
           m_rep_timer.setTop(m_args.report_period);
+
+        if (paramChanged(m_args.report_enable))
+        {
+          if (m_args.report_enable)
+          {
+            setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
+            m_rep_timer.reset();
+          }
+          else
+          {
+            setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_IDLE);
+          }
+        }
       }
 
       //! Initialize resources.
@@ -149,19 +160,6 @@ namespace Transports
 
         m_rep_timer.reset();
 
-        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_IDLE);
-      }
-
-      void
-      onActivation(void)
-      {
-        setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_ACTIVE);
-        m_rep_timer.reset();
-      }
-
-      void
-      onDeactivation(void)
-      {
         setEntityState(IMC::EntityState::ESTA_NORMAL, Status::CODE_IDLE);
       }
 
@@ -579,7 +577,7 @@ namespace Transports
         {
           waitForMessages(1.0);
 
-          if (m_args.report_enable && isActive())
+          if (m_args.report_enable)
           {
             if (m_rep_timer.overflow())
             {
