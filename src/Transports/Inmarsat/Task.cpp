@@ -48,6 +48,8 @@ namespace Transports
       int data_rate;
     };
 
+    //! Display fields.
+    static const int c_display_fields = 0;
     //! Minimum number of calibration output
     //! characters to validate process.
     static const int c_min_chars = 10;
@@ -216,10 +218,9 @@ namespace Transports
           unsigned rcsum = 0;
           unsigned ccsum = XORChecksum::compute((uint8_t*)m_bfr + 1, rv - 1 - 5);
           
-          std::sscanf(m_bfr, "$T%lf*%02X\r\n",
-                       &m_temp.value,
-                      &rcsum);
-                      
+          std::sscanf(m_bfr, "$AT%lf*%02X\r\n",
+                       &m_temp.value, &rcsum);
+                                
           if (rcsum != ccsum)
             continue;
 
