@@ -120,15 +120,124 @@ namespace Transports
       onResourceInitialization(void)
       {
 
-        while (!stopping())
+        /*while (!stopping())
         {
           if (setParameter("R", "Output rate", m_args.data_rate))
             break;
-        }
+        }*/
 
         while (!stopping())
         {
-          if (setParameter("X", "Display", c_display_fields))
+          if (setParameter("AT", "Display", c_display_fields))
+            break;
+        }
+        
+        //SkyWave-Proprietary Extended Commands
+        while (!stopping())
+        {
+          if (setParameter("CRC", "Error Detection", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("EVMON", "Event Log Monitor", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("EVNT", "Event Log Get", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("EVSTR", "Event Stream", 0))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("EXIT", "Exit Command", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("GPS", "Get GPS Information", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGFG", "To-Mobile Message Get", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGFM", "To-Mobile Message Rx Retrieved", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGFN", "To-Mobile Message New", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGFS", "To-Mobile Message State", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGRC", "From-Mobile Message Cancel", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGRS", "From-Mobile Message State", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("MGRT", "From-Mobile Message Send", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("OFF", "Prepare for shutdown", 0))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("SREG", "View all S Registers", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("SYSL", "View Syslog", 0))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("TRK", "GPS Tracking", c_display_fields))
+            break;
+        }
+        
+        while (!stopping())
+        {
+          if (setParameter("UTC", "Display UTC Date and Time", 0))
             break;
         }
 
