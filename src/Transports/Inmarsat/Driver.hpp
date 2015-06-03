@@ -25,126 +25,72 @@
 // Author: Mauro Brandão                                                    *
 //***************************************************************************
 
+#ifndef TRANSPORTS_INMARSAT_DRIVER_HPP_INCLUDED_
+#define TRANSPORTS_INMARSAT_DRIVER_HPP_INCLUDED_
+
+// ISO C++ 98 headers.
+#include <sstream>
+#include <string>
+
 // DUNE headers.
 #include <DUNE/DUNE.hpp>
 
-// Local headers.
-#include "Driver.hpp"
-
 namespace Transports
 {
-  //! Task for the Inmarsat modem.
+  //! Device driver for the Inmarsat modem.
   namespace Inmarsat
   {
-  using DUNE_NAMESPACES;
-  
-  //! %Task arguments.
-  struct Arguments
-  {
-    std::string uart_dev;
-    unsigned uart_baud;
-    double data_tout;
-    int data_rate;
-  };
+    using DUNE_NAMESPACES;
 
-  struct Task: public DUNE::Tasks::Task
-  {
-    //! Serial port.
-    SerialPort* m_uart;
-    //! Driver.
-    Driver* m_driver;
-    //! Read timestamp.
-    double m_tstamp;
-    //! Task arguments.
-    Arguments m_args;
-    
-    //! Constructor.
-    //! @param[in] name task name.
-    //! @param[in] ctx context.
-    Task(const std::string& name, Tasks::Context& ctx):
-      DUNE::Tasks::Task(name, ctx),
-        m_uart(NULL),
-        m_driver(NULL),
-        m_tstamp(0)
-    {
-      // Retrieve config values.
-      param("Serial Port - Device", m_args.uart_dev)
-      .defaultValue("")
-      .description("Serial port device used to communicate with the modem");
+    //! Default AT command timeout.
+    static const double c_timeout = 5.0;
 
-      param("Serial Port - Baud Rate", m_args.uart_baud)
-      .defaultValue("9600")
-      .description("Serial port baud rate");
-    }
-    
-    ~Task(void)
+    class Driver: public HayesModem
     {
-      onResourceRelease();
-    }
+    public:
+      //! Constructor.
+      //! @param[in] task parent task.
+      //! @param[in] handle I/O handle.
+      Driver(Tasks::Task* task, SerialPort* uart):
+        HayesModem(task, uart)
+      { }
 
-    //! Update internal state with new parameter values.
-    void
-    onUpdateParameters(void)
-    {
-    }
+      //! Destructor.
+      ~Driver(void)
+      { }
 
-    //! Reserve entity identifiers.
-    void
-    onEntityReservation(void)
-    {
-    }
-
-    //! Resolve entity names.
-    void
-    onEntityResolution(void)
-    {
-    }
-
-    //! Acquire resources.
-    void
-    onResourceAcquisition(void)
-    {
-      try
+      //! Reset device.
+      void
+      sendReset(void)
       {
-        m_uart = new SerialPort(m_args.uart_dev, m_args.uart_baud);
-        m_driver = new Driver(this, m_uart);
-        m_driver->initialize();
+        //sendAT("Z0");
       }
-      catch (std::runtime_error& e)
-      {
-         std::cerr << e.what() << std::endl;
-      }
-    }
 
-    //! Initialize resources.
-    void
-    onResourceInitialization(void)
-    {
-    }
-
-    //! Release resources.
-    void
-    onResourceRelease(void)
-    {
-      if (m_driver)
+      void
+      getRSSI(void)
       {
-        delete m_driver;
-        m_driver = NULL;
-      }
-      Memory::clear(m_uart);
-    }
 
-    //! Main loop.
-    void
-    onMain(void)
-    {
-      while (!stopping())
-      {
-        waitForMessages(1.0);
       }
-    }
-  };
+      
+      private:
+      
+      void
+      sendInitialization(void)
+      {
+        // Get hardware
+        sendAT("");
+        expectOK();
+      }
+
+      void
+      expectOK(void)
+      {
+        std::string rv = readLine();
+        if (rv != "OK")
+          throw UnexpectedReply("OK", rv);
+      }
+    };
   }
 }
 
-DUNE_TASK
+#endif
