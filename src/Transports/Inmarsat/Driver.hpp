@@ -88,6 +88,8 @@ namespace Transports
         std::string rv = readLine();
         if (rv != "OK")
           throw UnexpectedReply("OK", rv);
+        else
+          std::cout << rv << std::endl;
       }
     };
   }

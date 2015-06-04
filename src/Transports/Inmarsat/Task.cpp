@@ -86,28 +86,33 @@ namespace Transports
     void
     onUpdateParameters(void)
     {
+      inf("chamado o onUpdateParameters");
     }
 
     //! Reserve entity identifiers.
     void
     onEntityReservation(void)
     {
+      inf("chamado o OnEntityReservation");
     }
 
     //! Resolve entity names.
     void
     onEntityResolution(void)
     {
+      inf("chamado o onEntityResolution");
     }
 
     //! Acquire resources.
     void
     onResourceAcquisition(void)
     {
+      inf("chamado o onResourceAcquisition");
       try
       {
         m_uart = new SerialPort(m_args.uart_dev, m_args.uart_baud);
         m_driver = new Driver(this, m_uart);
+        inf("m_driver is initialize");
         m_driver->initialize();
       }
       catch (std::runtime_error& e)
@@ -120,12 +125,14 @@ namespace Transports
     void
     onResourceInitialization(void)
     {
+      inf("chamado o onResourceInitialization");
     }
 
     //! Release resources.
     void
     onResourceRelease(void)
     {
+      inf("chamado o onResourceRelease");
       if (m_driver)
       {
         delete m_driver;
