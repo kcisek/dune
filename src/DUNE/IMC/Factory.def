@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: bd24744a7b3932c3a956ddc60e9abdd6                            *
+// IMC XML MD5: fc1969e7dd93a2802d3e93c9d0b2bb6a                            *
 //***************************************************************************
 
 MESSAGE(1, EntityState)
@@ -268,4 +268,6 @@ MESSAGE(891, UsblPosition)
 MESSAGE(892, UsblFix)
 MESSAGE(893, ParametersXml)
 MESSAGE(894, GetParametersXml)
+MESSAGE(2001, NecMsg)
+MESSAGE(2002, JsonObject)
 #undef MESSAGE

@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: bd24744a7b3932c3a956ddc60e9abdd6                            *
+// IMC XML MD5: fc1969e7dd93a2802d3e93c9d0b2bb6a                            *
 //***************************************************************************
 
 // ISO C++ 98 headers.
@@ -19987,6 +19987,118 @@ namespace DUNE
       (void)bfr__;
       (void)size__;
       return 0;
+    }
+
+    NecMsg::NecMsg(void)
+    {
+      m_header.mgid = 2001;
+      clear();
+    }
+
+    void
+    NecMsg::clear(void)
+    {
+      data.clear();
+    }
+
+    bool
+    NecMsg::fieldsEqual(const Message& msg__) const
+    {
+      const IMC::NecMsg& other__ = static_cast<const NecMsg&>(msg__);
+      if (data != other__.data) return false;
+      return true;
+    }
+
+    int
+    NecMsg::validate(void) const
+    {
+      return false;
+    }
+
+    uint8_t*
+    NecMsg::serializeFields(uint8_t* bfr__) const
+    {
+      uint8_t* ptr__ = bfr__;
+      ptr__ += IMC::serialize(data, ptr__);
+      return ptr__;
+    }
+
+    uint16_t
+    NecMsg::deserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::deserialize(data, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    uint16_t
+    NecMsg::reverseDeserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::reverseDeserialize(data, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    void
+    NecMsg::fieldsToJSON(std::ostream& os__, unsigned nindent__) const
+    {
+      IMC::toJSON(os__, "data", data, nindent__);
+    }
+
+    JsonObject::JsonObject(void)
+    {
+      m_header.mgid = 2002;
+      clear();
+    }
+
+    void
+    JsonObject::clear(void)
+    {
+      json.clear();
+    }
+
+    bool
+    JsonObject::fieldsEqual(const Message& msg__) const
+    {
+      const IMC::JsonObject& other__ = static_cast<const JsonObject&>(msg__);
+      if (json != other__.json) return false;
+      return true;
+    }
+
+    int
+    JsonObject::validate(void) const
+    {
+      return false;
+    }
+
+    uint8_t*
+    JsonObject::serializeFields(uint8_t* bfr__) const
+    {
+      uint8_t* ptr__ = bfr__;
+      ptr__ += IMC::serialize(json, ptr__);
+      return ptr__;
+    }
+
+    uint16_t
+    JsonObject::deserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::deserialize(json, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    uint16_t
+    JsonObject::reverseDeserializeFields(const uint8_t* bfr__, uint16_t size__)
+    {
+      const uint8_t* start__ = bfr__;
+      bfr__ += IMC::reverseDeserialize(json, bfr__, size__);
+      return bfr__ - start__;
+    }
+
+    void
+    JsonObject::fieldsToJSON(std::ostream& os__, unsigned nindent__) const
+    {
+      IMC::toJSON(os__, "json", json, nindent__);
     }
   }
 }

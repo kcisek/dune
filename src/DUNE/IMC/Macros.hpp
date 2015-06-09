@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: bd24744a7b3932c3a956ddc60e9abdd6                            *
+// IMC XML MD5: fc1969e7dd93a2802d3e93c9d0b2bb6a                            *
 //***************************************************************************
 
 #ifndef DUNE_IMC_MACROS_HPP_INCLUDED_
@@ -510,5 +510,9 @@
 #define DUNE_IMC_PARAMETERSXML 893
 //! GetParametersXml identification number.
 #define DUNE_IMC_GETPARAMETERSXML 894
+//! NecMsg identification number.
+#define DUNE_IMC_NECMSG 2001
+//! JsonObject identification number.
+#define DUNE_IMC_JSONOBJECT 2002
 
 #endif
