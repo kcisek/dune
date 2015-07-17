@@ -26,7 +26,7 @@
 //***************************************************************************
 // Automatically generated.                                                 *
 //***************************************************************************
-// IMC XML MD5: 46963dd0144367b7b8ebe169ae5edf4d                            *
+// IMC XML MD5: 11ec9a970e6a79185be50a9a1030e939                            *
 //***************************************************************************
 
 #ifndef DUNE_IMC_MACROS_HPP_INCLUDED_
@@ -362,6 +362,8 @@
 #define DUNE_IMC_DISLODGE 483
 //! Formation identification number.
 #define DUNE_IMC_FORMATION 484
+//! Launch identification number.
+#define DUNE_IMC_LAUNCH 485
 //! VehicleState identification number.
 #define DUNE_IMC_VEHICLESTATE 500
 //! VehicleCommand identification number.
